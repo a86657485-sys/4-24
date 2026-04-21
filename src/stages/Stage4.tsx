@@ -47,6 +47,8 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
   const { triggerAI } = useAI();
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
+  const [failCountA, setFailCountA] = useState(0);
+  const [failCountB, setFailCountB] = useState(0);
   
   // Part A state
   const [remainingWords, setRemainingWords] = useState(WORDS);
@@ -77,9 +79,16 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
       }, 500);
     } else {
       playError();
-      // Shake animation indicator
       setAnimatingId(id);
       setAnimTarget('error');
+      const nextFails = failCountA + 1;
+      setFailCountA(nextFails);
+      if (nextFails >= 3) {
+        triggerAI('别灰心，俺老孙施法把剩下的词都放对位置了！仔细看看分类规律。');
+        setRemainingWords([]);
+      } else {
+        triggerAI('分类错啦！再想想，“' + word.text + '”在句子中是必不可少的关键词，还是没有实义的虚词？');
+      }
       setTimeout(() => {
         setAnimatingId(null);
         setAnimTarget(null);
@@ -113,6 +122,14 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
       setSelectedSyn(null);
     } else {
       playError();
+      const nextFails = failCountB + 1;
+      setFailCountB(nextFails);
+      if (nextFails >= 3) {
+        triggerAI('近义词合并有点复杂，悟空施展“归一法”，都帮你连好了！');
+        setMatchedSyns(SYNONYMS.map(s => s.id));
+      } else {
+        triggerAI('连线错啦！“' + syn.text + '”指的可能不是这位，再想想！');
+      }
       setSelectedSyn(null);
     }
   };
@@ -133,6 +150,14 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
       </div>
 
       <div className="w-full max-w-4xl mt-8 flex flex-col items-center mb-48 z-10 relative">
+        <div className="bg-brand-cyan/10 border border-brand-cyan/20 rounded-xl p-4 mb-6 w-full">
+          <p className="text-sm text-brand-cyan font-bold mb-2">【科学小知识：词频统计与清洗】</p>
+          <p className="text-xs text-white/70 leading-relaxed">
+            把所有的词数一数，这就是<b>“词频统计”</b>。但为了让词云图更准确，我们还得把<b>停用词</b>（没意义的词）扔掉，
+            并且把<b>近义词</b>（意思相同的词）合并到一起。这样，最重要的信息才会变得最显眼！
+          </p>
+        </div>
+
         {/* Part A: Stop words cleaning */}
         {step === 1 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full flex flex-col items-center gap-8">

@@ -23,6 +23,7 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
     '天宫': '',
     '妖怪': ''
   });
+  const [failCount, setFailCount] = useState(0);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,8 +46,19 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
     
     if (!allCorrect) {
        playError();
-       triggerAI('在第五关词云图大小比例中，学生填错了对应的频率数字！请大圣立刻指出，提醒他不要瞎编数字！');
-       return; // force them to be correct to see generation or just continue anyway? Continue is fine but let's encourage them to recheck. Oh wait, previous code let them continue anyway. Let's let them proceed but deduct points, wait, previous code just didn't add points. Let's actually enforce correctness to allow proceed!
+       const nextFails = failCount + 1;
+       setFailCount(nextFails);
+       if (nextFails >= 3) {
+         triggerAI('这些数字确实有点绕，俺老孙用神识帮你扫了一下，已经填好了！快点击开始施法吧！');
+         const correctInputs: Record<string, string> = {};
+         Object.keys(inputs).forEach(k => {
+           correctInputs[k] = (wordFreq[k] || 0).toString();
+         });
+         setInputs(correctInputs);
+       } else {
+         triggerAI('哎呀，有数字填错了！请大圣提醒他回顾刚才关卡的记忆，再仔细填一遍！');
+       }
+       return;
     }
 
     setScore(20);
@@ -133,6 +145,14 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
       </div>
 
       <div className="w-full max-w-4xl mt-8 flex flex-col items-center mb-48 z-10 relative">
+        <div className="bg-brand-cyan/10 border border-brand-cyan/20 rounded-xl p-4 mb-6 w-full max-w-xl">
+          <p className="text-sm text-brand-cyan font-bold mb-2">【科学小知识：生成词云图】</p>
+          <p className="text-xs text-white/70 leading-relaxed">
+            我们把统计出的<b>“词频”</b>数据喂给计算机，计算机就会根据数值的大小来绘制图形。
+            数值越大，单词占用的空间就越大。最后，一张色彩缤纷、重点突出的<b>词云图</b>就诞生啦！
+          </p>
+        </div>
+
         {/* Step 1: Input form */}
         {step === 1 && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-glass p-8 rounded-2xl w-full max-w-xl">

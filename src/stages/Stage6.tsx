@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../components/Button';
 import { drawWordCloud } from '../utils/canvas';
@@ -21,16 +21,27 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
   const [wordFreq, setWordFreq] = useState<{text: string, count: number}[]>([]);
   
   const [isLoadingStep, setIsLoadingStep] = useState<number | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [isGeneratingText, setIsGeneratingText] = useState(false);
   const [activeTask, setActiveTask] = useState<number | null>(null);
+  const [failCount, setFailCount] = useState(0);
+
+  const setWithLoading = (stepNum: number, msg: string) => {
+    setIsLoadingStep(stepNum);
+    setLoadingMessage(msg);
+  };
+  
   const [manualSplitText, setManualSplitText] = useState('');
   const [practiceWords, setPracticeWords] = useState<string[]>([]);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const playSuccess = () => new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3').play().catch(() => {});
+  const playError = () => new Audio('https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3').play().catch(() => {});
+
   const callDeepSeek = async (prompt: string) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout limit
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -84,15 +95,17 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
     if (!rawText.trim()) return triggerAI('学生连文本都没输入就想分词，请提示他先在下面文本框输入或拷贝一段文章。');
     if (step >= 1) return;
     setActiveTask(1);
+    setFailCount(0);
   };
 
   const autoStep1 = async () => {
-    setIsLoadingStep(1);
+    setWithLoading(1, '正在念分词咒，请稍候...');
     setActiveTask(null);
     try {
       const res = await processTextWithAI(`请对以下文本进行中文分词，仅返回用空格分隔的词语，不要任何解释和其他文字，过滤掉常见标点符号：\n${rawText.slice(0, 400)}`);
       setWords(res.split(/[\s,，。、]+/).filter(w => w.trim().length > 0));
       setStep(1);
+      playSuccess();
     } catch (e) {
       triggerAI('API调用太拥挤啦，一直施法中失败了，请引导学生重新点击自动分词尝试！');
     } finally {
@@ -105,15 +118,17 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
     if (step >= 2) return;
     setPracticeWords(words.slice(0, 30));
     setActiveTask(2);
+    setFailCount(0);
   };
 
   const autoStep2 = async () => {
-    setIsLoadingStep(2);
+    setWithLoading(2, '正在施展净水术，清洗停用词...');
     setActiveTask(null);
     try {
       const res = await processTextWithAI(`下面是已经分好词的文本，请彻底过滤掉无用的停用词（如的、了、在、是、和、就），并将指代相同事物的词语统一合并为同一个词。仅返回处理后用空格分隔的词语，不要任何解释：\n${words.slice(0, 300).join(' ')}`);
       setCleaned(res.split(/[\s,，。、]+/).filter(w => w.trim().length > 0));
       setStep(2);
+      playSuccess();
     } catch {
       triggerAI('网络清洗发生波动，请让学生再试一次。');
     } finally {
@@ -129,16 +144,18 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
     }
     if (step >= 3) return;
     setActiveTask(3);
+    setFailCount(0);
   };
 
   const autoStep3 = () => {
-    setIsLoadingStep(3);
+    setWithLoading(3, '算盘敲得飞起，正在统计词频...');
     setActiveTask(null);
     const counts: Record<string, number> = {};
     cleaned.forEach(w => counts[w] = (counts[w] || 0) + 1);
     const result = Object.keys(counts).map(k => ({text: k, count: counts[k]})).sort((a,b) => b.count-a.count).slice(0, 100);
     setWordFreq(result);
     setStep(3);
+    playSuccess();
     setIsLoadingStep(null);
   };
 
@@ -149,12 +166,13 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
     }
     if (step >= 4) return;
     setStep(4);
+    playSuccess();
     setTimeout(() => {
       if (canvasRef.current && wordFreq.length > 0) {
         drawWordCloud(canvasRef.current, wordFreq);
       }
     }, 100);
-    triggerAI('学生成功生成了最终的词云！请用孙悟空的语气大力夸奖他！并提问：“回顾一下，我们这节课把一段话变成词云图，是按顺序经过了哪四个步骤？” 引导他总结本节课的四大重难点步骤：分词、清洗、统计、生成云图。');
+    triggerAI('恭喜学生完成了全流程！');
   };
 
   const limitText = rawText.slice(0, 40);
@@ -173,6 +191,27 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
 
   return (
     <div className="flex flex-col max-w-6xl mx-auto py-8 px-4 relative min-h-screen">
+      {/* Loading Overlay Modal */}
+      <AnimatePresence>
+        {isLoadingStep && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-bg-deep/80 backdrop-blur-md"
+          >
+            <div className="w-24 h-24 border-4 border-brand-gold border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_30px_rgba(255,215,0,0.3)]"></div>
+            <motion.p 
+              animate={{ opacity: [0.5, 1, 0.5] }} 
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-2xl font-bold text-brand-gold drop-shadow-md"
+            >
+              {loadingMessage}
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <h2 className="text-3xl font-bold bg-gradient-to-br from-brand-gold to-[#FFF8DC] text-transparent bg-clip-text mb-8 text-center">第六关：实战演练！全流程召唤词云</h2>
       
       <div className="flex flex-col md:flex-row gap-6 mb-8 w-full">
@@ -187,44 +226,30 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
            />
            {step === 0 && (
              <div className="flex flex-col gap-3 mt-2">
-               <span className="text-sm text-white/50 leading-none">从四大名著提取经典原文 (600-800字)：</span>
-               <div className="flex flex-wrap items-center gap-2">
-                 {['西游记', '三国演义', '水浒传', '红楼梦'].map(book => (
-                   <button 
-                     key={book}
-                     onClick={() => generateSampleText(book, true)} 
-                     disabled={isGeneratingText}
-                     className="px-3 py-1.5 text-sm bg-brand-gold/20 hover:bg-brand-gold/40 text-brand-gold border border-brand-gold/30 rounded-lg transition-colors disabled:opacity-50"
-                   >
-                     📖 {book}
-                   </button>
-                 ))}
-               </div>
-               
-               <span className="text-sm text-white/50 leading-none mt-1">或生成其他题材的长文 (600-800字)：</span>
-               <div className="flex flex-wrap items-center gap-2">
-                 <button 
-                   onClick={() => generateSampleText('童话故事')} 
-                   disabled={isGeneratingText}
-                   className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-colors disabled:opacity-50"
-                 >
-                   📝 童话故事
-                 </button>
-                 <button 
-                   onClick={() => generateSampleText('科幻小说')} 
-                   disabled={isGeneratingText}
-                   className="px-3 py-1.5 text-sm bg-brand-cyan/20 hover:bg-brand-cyan/40 text-brand-cyan border border-brand-cyan/30 rounded-lg transition-colors disabled:opacity-50"
-                 >
-                   🛸 科幻小说
-                 </button>
-                 <button 
-                   onClick={() => generateSampleText('风景游记')} 
-                   disabled={isGeneratingText}
-                   className="px-3 py-1.5 text-sm bg-brand-red/20 hover:bg-brand-red/40 text-brand-red border border-brand-red/30 rounded-lg transition-colors disabled:opacity-50"
-                 >
-                   🏞️ 写景作文
-                 </button>
-               </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {['西游记', '三国演义', '水浒传', '红楼梦'].map(book => (
+                    <button 
+                      key={book}
+                      onClick={() => generateSampleText(book, true)} 
+                      disabled={isGeneratingText}
+                      className="px-3 py-1.5 text-sm bg-brand-gold/20 hover:bg-brand-gold/40 text-brand-gold border border-brand-gold/30 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      📖 {book}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {['童话故事', '科幻小说', '风景游记'].map(genre => (
+                    <button 
+                      key={genre}
+                      onClick={() => generateSampleText(genre)} 
+                      disabled={isGeneratingText}
+                      className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      📝 {genre}
+                    </button>
+                  ))}
+                </div>
              </div>
            )}
         </div>
@@ -232,112 +257,112 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
         <div className="flex-1 flex flex-col gap-4">
            {/* Pipeline tools */}
            <div className="flex flex-row items-center gap-1 flex-none bg-black/20 p-2 rounded-xl border border-white/10">
-             <button onClick={handleStep1} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border \${step >= 1 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
-                {isLoadingStep === 1 ? '施法...' : '✂️ 文本分词'}
+             <button onClick={handleStep1} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 1 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+                ✂️ 文本分词
              </button>
              <span className="text-white/20 text-xs">▶</span>
-             <button onClick={handleStep2} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border \${step >= 2 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
-                {isLoadingStep === 2 ? '施法...' : '🧹 过滤清洗'}
+             <button onClick={handleStep2} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 2 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+                🧹 过滤清洗
              </button>
              <span className="text-white/20 text-xs">▶</span>
-             <button onClick={handleStep3} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border \${step >= 3 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
-                {isLoadingStep === 3 ? '算盘...' : '🧮 词频统计'}
+             <button onClick={handleStep3} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 3 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+                🧮 词频统计
              </button>
              <span className="text-white/20 text-xs">▶</span>
-             <button onClick={handleStep4} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border \${step >= 4 ? 'bg-brand-gold/40 border-brand-gold/50 shadow-[0_0_10px_rgba(255,215,0,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+             <button onClick={handleStep4} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 4 ? 'bg-brand-gold/40 border-brand-gold/50 shadow-[0_0_10px_rgba(255,215,0,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
                 ✨ 召唤词云
              </button>
            </div>
            
-           <div className="bg-glass flex-1 rounded-2xl p-4 flex flex-col overflow-hidden min-h-[300px]">
-               <h3 className="font-bold text-sm text-brand-cyan mb-3">状态面板</h3>
-               <div className="flex-1 overflow-y-auto text-sm text-white/80 space-y-3">
-                 {activeTask === 1 && (
-                   <div className="flex flex-col gap-3">
-                     <p className="text-brand-gold font-bold text-base">🛠️ 实操小体验：试着给这句短话分分词吧！</p>
-                     <p className="text-white/70 text-xs text-brand-gold">阅读下面的短句，像刚才一样，点击两个字中间的缝隙切出词语！</p>
-                     <div className="bg-black/30 p-4 rounded-xl flex flex-wrap items-center mt-2 cursor-crosshair">
-                        {rawText.slice(0, 40).split('').map((char, i, arr) => (
-                           <React.Fragment key={i}>
-                             <span className="text-xl font-bold bg-white/5 py-1 px-0.5 rounded select-none text-white">{char}</span>
-                             {i < arr.length - 1 && (
-                               <div 
-                                 onClick={() => {
-                                   if (!manualSplitText.includes(i.toString())) {
-                                     setManualSplitText(prev => prev ? prev + ',' + i : i.toString());
-                                   } else {
-                                     setManualSplitText(prev => prev.split(',').filter(x => x !== i.toString()).join(','));
-                                   }
-                                 }}
-                                 className="w-4 h-8 flex items-center justify-center hover:bg-brand-gold/50 cursor-pointer group transition-colors rounded mx-[1px]"
-                               >
-                                 <div className={`w-[2px] h-[60%] transition-colors \${manualSplitText.split(',').includes(i.toString()) ? 'bg-brand-gold shadow-[0_0_8px_#ffd700]' : 'bg-transparent group-hover:bg-brand-gold'}`} />
-                               </div>
-                             )}
-                           </React.Fragment>
+           <div className="bg-glass flex-1 rounded-2xl p-4 flex flex-col overflow-hidden min-h-[500px]">
+                <h3 className="font-bold text-sm text-brand-cyan mb-3">状态面板</h3>
+                <div className="flex-1 overflow-y-auto text-sm text-white/80 space-y-3">
+                  {activeTask === 1 && (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-brand-gold font-bold text-base">🛠️ 实操小体验：试着给这句短话分分词吧！</p>
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-[10px] text-white/60">
+                         <b>原理：</b>计算机无法直接处理整句，需按语义切分为独立词语（如“词云图”切为“词云/图”）。
+                      </div>
+                      <p className="text-white/70 text-xs italic">阅读下面的短句，点缝隙切词！</p>
+                      <div className="bg-black/30 p-4 rounded-xl flex flex-wrap items-center mt-2 cursor-crosshair">
+                         {rawText.slice(0, 40).split('').map((char, i, arr) => (
+                            <React.Fragment key={i}>
+                              <span className="text-xl font-bold bg-white/5 py-1 px-0.5 rounded select-none text-white">{char}</span>
+                              {i < arr.length - 1 && (
+                                <div 
+                                  onClick={() => {
+                                    if (!manualSplitText.includes(i.toString())) {
+                                      setManualSplitText(prev => prev ? prev + ',' + i : i.toString());
+                                    } else {
+                                      setManualSplitText(prev => prev.split(',').filter(x => x !== i.toString()).join(','));
+                                    }
+                                  }}
+                                  className="w-4 h-8 flex items-center justify-center hover:bg-brand-gold/50 cursor-pointer group transition-colors rounded mx-[1px]"
+                                >
+                                  <div className={`w-[2px] h-[60%] transition-colors ${manualSplitText.split(',').includes(i.toString()) ? 'bg-brand-gold shadow-[0_0_8px_#ffd700]' : 'bg-transparent group-hover:bg-brand-gold'}`} />
+                                </div>
+                              )}
+                            </React.Fragment>
+                         ))}
+                      </div>
+                      <button onClick={autoStep1} className="mt-2 w-full py-3 bg-brand-gold/90 hover:bg-brand-gold text-black font-bold rounded-xl shadow-[0_0_15px_rgba(255,215,0,0.5)] transition-all transform hover:scale-[1.02]">✨ 让大圣帮助自动全篇分词</button>
+                    </div>
+                  )}
+                  
+                  {activeTask === 2 && (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-brand-gold font-bold text-base">🧹 实操小体验：清洗多余杂质</p>
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-[10px] text-white/60">
+                         <b>原理：</b>停用词（的、了、在）出现极多但无实质意义，过滤它们能突出核心关键词。
+                      </div>
+                      <p className="text-white/70 text-xs">点击你认为是无意义的“停用词”将它们抹去。</p>
+                      <div className="flex flex-wrap gap-2 py-2">
+                        {practiceWords.map((w, i) => (
+                          <span key={i} onClick={() => setPracticeWords(prev => prev.filter((_, idx) => idx !== i))} className="cursor-pointer hover:bg-brand-red bg-white/10 px-3 py-1.5 rounded transition-colors text-white">{w}</span>
                         ))}
-                     </div>
-                     <div className="mt-2 text-white/80 text-sm">
-                       <p className="mb-2 text-brand-cyan">已切分好的词语：</p>
-                       <div className="flex flex-wrap gap-2">
-                         <AnimatePresence>
-                           {segments.map((seg, idx) => (
-                              <motion.span 
-                                key={idx + '-' + seg} 
-                                layout 
-                                initial={{ opacity: 0, scale: 0.8 }} 
-                                animate={{ opacity: 1, scale: 1 }} 
-                                className="bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan px-2 py-1 rounded shadow-sm"
-                              >
-                                {seg}
-                              </motion.span>
-                           ))}
-                         </AnimatePresence>
-                       </div>
-                     </div>
-                     <button onClick={autoStep1} className="mt-2 w-full py-3 bg-brand-gold/90 hover:bg-brand-gold text-black font-bold rounded-xl shadow-[0_0_15px_rgba(255,215,0,0.5)] transition-all transform hover:scale-[1.02]">✨ 体验完毕，让大圣帮忙自动全篇分词</button>
-                   </div>
-                 )}
-                 
-                 {activeTask === 2 && (
-                   <div className="flex flex-col gap-3">
-                     <p className="text-brand-gold font-bold text-base">🧹 实操小体验：清洗多余杂质</p>
-                     <p className="text-white/70">点击下方你认为是毫无意义的“停用词”（比如的、地、了、啊）将它们抹去。</p>
-                     <div className="flex flex-wrap gap-2 py-2">
-                       {practiceWords.map((w, i) => (
-                         <span key={i} onClick={() => setPracticeWords(prev => prev.filter((_, idx) => idx !== i))} className="cursor-pointer hover:bg-brand-red bg-white/10 px-3 py-1.5 rounded transition-colors text-white">{w}</span>
-                       ))}
-                     </div>
-                     <button onClick={autoStep2} className="mt-2 w-full py-3 bg-brand-cyan/90 hover:bg-brand-cyan text-black font-bold rounded-xl shadow-[0_0_15px_rgba(26,188,156,0.4)] transition-all transform hover:scale-[1.02]">✨ 清得很累？让大圣帮忙自动清洗整篇后文！</button>
-                   </div>
-                 )}
-                 
-                 {activeTask === 3 && (
-                   <div className="flex flex-col gap-3">
-                     <p className="text-brand-gold font-bold text-base">🧮 实操小体验：肉眼算盘</p>
-                     <p className="text-white/70 leading-relaxed">看看下面这段清洗后的词！你能找出哪一个词出现最多吗？</p>
-                     <p className="bg-black/30 p-2 rounded text-white/50">{cleaned.slice(0, 40).join(' ')}...</p>
-                     <div className="flex gap-2 w-full">
-                        <input className="flex-1 bg-white/5 border border-white/20 p-2 rounded text-white" placeholder="哪个词出现次数最多？" />
-                        <input type="number" className="w-24 bg-white/5 border border-white/20 p-2 rounded text-white" placeholder="猜次数" />
-                     </div>
-                     <button onClick={autoStep3} className="mt-2 w-full py-3 bg-brand-gold/90 hover:bg-brand-gold text-black font-bold rounded-xl shadow-[0_0_15px_rgba(255,215,0,0.4)] transition-all transform hover:scale-[1.02]">✨ 密密麻麻数不过来！让超级算盘测算全局！</button>
-                   </div>
-                 )}
+                      </div>
+                      <button onClick={autoStep2} className="mt-2 w-full py-3 bg-brand-cyan/90 hover:bg-brand-cyan text-black font-bold rounded-xl shadow-[0_0_15px_rgba(26,188,156,0.4)] transition-all transform hover:scale-[1.02]">✨ 让大圣帮忙自动清洗整篇后文！</button>
+                    </div>
+                  )}
+                  
+                  {activeTask === 3 && (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-brand-gold font-bold text-base">🧮 实操小体验：肉眼算盘</p>
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-[10px] text-white/60">
+                         <b>原理：</b>通过频次计数确定权重，高频词在图形中将被绘制得更大、更显眼。
+                      </div>
+                      <p className="text-white/70 text-xs leading-relaxed">你能找出哪一个词出现最多吗？</p>
+                      <p className="bg-black/30 p-2 rounded text-white/50">{cleaned.slice(0, 40).join(' ')}...</p>
+                      <div className="flex gap-2 w-full">
+                         <input className="flex-1 bg-white/5 border border-white/20 p-2 rounded text-white" placeholder="哪个词出现最多？" />
+                         <input type="number" className="w-24 bg-white/5 border border-white/20 p-2 rounded text-white" placeholder="猜次数" />
+                      </div>
+                      <button 
+                         onClick={() => {
+                           setFailCount(f => {
+                             const n = f + 1;
+                             if (n >= 3) triggerAI('算不过来也没关系，俺老孙这就开坛设祭，让超级算盘测算全局！');
+                             return n;
+                           });
+                           autoStep3();
+                         }} 
+                         className="mt-2 w-full py-3 bg-brand-gold/90 hover:bg-brand-gold text-black font-bold rounded-xl shadow-[0_0_15px_rgba(255,215,0,0.4)] transition-all transform hover:scale-[1.02]"
+                      >✨ 让大圣帮助自动统计全局</button>
+                    </div>
+                  )}
 
-                 {!activeTask && step === 0 && <p className="opacity-50">等待执行步骤...</p>}
-                 {!activeTask && step >= 1 && step < 3 && (
-                   <div className="flex flex-wrap gap-2 items-start justify-start">
-                     {(step === 1 ? words : cleaned).map((w,i) => <span key={i} className="bg-white/10 px-2 py-1 rounded">{w}</span>)}
-                   </div>
-                 )}
-                 {!activeTask && step >= 3 && (
-                   <div className="flex flex-wrap gap-2 items-start justify-start">
-                     {wordFreq.slice(0, 30).map((w,i) => <span key={i} className="bg-brand-gold/20 text-brand-gold border border-brand-gold/30 px-2 py-1 rounded">{w.text} <span className="text-white/60 text-xs">({w.count})</span></span>)}
-                     {wordFreq.length > 30 && <span className="opacity-50 mt-2 block w-full">...及更多</span>}
-                   </div>
-                 )}
-               </div>
+                  {!activeTask && step === 0 && <p className="opacity-50">等待执行步骤...</p>}
+                  {!activeTask && step >= 1 && step < 3 && (
+                    <div className="flex flex-wrap gap-2 items-start justify-start">
+                      {(step === 1 ? words : cleaned).map((w,i) => <span key={i} className="bg-white/10 px-2 py-1 rounded">{w}</span>)}
+                    </div>
+                  )}
+                  {!activeTask && step >= 3 && (
+                    <div className="flex flex-wrap gap-2 items-start justify-start">
+                      {wordFreq.slice(0, 30).map((w,i) => <span key={i} className="bg-brand-gold/20 text-brand-gold border border-brand-gold/30 px-2 py-1 rounded">{w.text} <span className="text-white/60 text-xs">({w.count})</span></span>)}
+                    </div>
+                  )}
+                </div>
            </div>
         </div>
       </div>
@@ -348,11 +373,10 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
            <div className="bg-[#140A28] border-2 border-brand-gold rounded-[24px] p-4 shadow-[0_10px_40px_rgba(255,215,0,0.3)]">
              <canvas 
                ref={canvasRef} 
-               width={window.innerWidth > 800 ? 800 : window.innerWidth - 60} 
+               width={800} 
                height={400}
              />
            </div>
-           
            <Button onClick={onComplete} className="mt-8 px-10 py-4 text-xl">
               恭喜结业！返回首页 🏆
            </Button>

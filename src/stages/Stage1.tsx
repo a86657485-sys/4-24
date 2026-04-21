@@ -30,6 +30,7 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
   const [dragMatches, setDragMatches] = useState<Record<string, string>>({});
   const [errorMsg, setErrorMsg] = useState('');
   const [score, setScore] = useState(0);
+  const [failCounts, setFailCounts] = useState<Record<string, number>>({ q1: 0, q2: 0, q3: 0 });
 
   useEffect(() => {
     setTimeout(() => setStep(1), 3000);
@@ -43,7 +44,14 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
       setStep(2);
     } else {
       playError();
-      setErrorMsg('再想想，最重要的词是不是通常比较大？');
+      const newFails = failCounts.q1 + 1;
+      if (newFails >= 3) {
+        setErrorMsg('看来这题有点难，正确答案是：出现次数最多（词频决定大小）');
+        setTimeout(() => handleQ1(true), 2000);
+      } else {
+        setErrorMsg('再想想，最重要的词是不是通常比较大？');
+      }
+      setFailCounts(prev => ({ ...prev, q1: newFails }));
     }
   };
 
@@ -57,7 +65,15 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
       playSuccess();
     } else {
       playError();
-      setErrorMsg('提示：词云主要展示词语的频率和重要性哦！');
+      const newFails = failCounts.q2 + 1;
+      if (newFails >= 3) {
+        setErrorMsg('正确答案：频率和重要性。别灰心，下一关会更精彩！');
+        setQ2Selection([0, 2]);
+        setTimeout(() => handleQ2(), 2000);
+      } else {
+        setErrorMsg('提示：词云主要展示词语的频率和重要性哦！');
+      }
+      setFailCounts(prev => ({ ...prev, q2: newFails }));
     }
   };
 
@@ -102,6 +118,13 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
       {/* Game Card Left: Explore */}
       <div className="flex-1 bg-glass p-8 rounded-2xl flex flex-col relative z-10 w-full mb-48 lg:mb-0">
         <h2 className="text-3xl font-bold bg-gradient-to-br from-brand-gold to-[#FFF8DC] text-transparent bg-clip-text mb-2">🌟 探索天庭词云图</h2>
+        <div className="bg-brand-cyan/10 border border-brand-cyan/20 rounded-lg p-3 mb-4">
+          <p className="text-xs text-brand-cyan font-bold mb-1">【科学小知识：什么是词云？】</p>
+          <p className="text-[10px] text-white/70 leading-relaxed">
+            词云（Word Cloud）是一种<b>文本可视化</b>技术。它通过改变字号大小来表现词语在一段文字中出现的频率。
+            简单来说：一个词出现的次数越多，它就显示得越大、越显眼！
+          </p>
+        </div>
         <p className="text-white/60 mb-6">悟空在图书馆发现了一张神秘的图，仔细观察图中最大的那个词...</p>
         
         {/* Mock Word Cloud Display */}

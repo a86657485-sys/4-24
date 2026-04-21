@@ -64,6 +64,7 @@ export const Stage3: React.FC<Props> = ({ onComplete }) => {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [clickedIndices, setClickedIndices] = useState<number[]>([]);
   const [score, setScore] = useState(0);
+  const [failCount, setFailCount] = useState(0);
 
   useEffect(() => {
     setTimeout(() => setStep(1), 3000);
@@ -80,12 +81,32 @@ export const Stage3: React.FC<Props> = ({ onComplete }) => {
 
   const handleWordClick = (word: string, index: number) => {
     if (clickedIndices.includes(index)) return;
-    if (!TARGETS.find(t => t.word === word)) {
+    const isTarget = TARGETS.find(t => t.word === word);
+    
+    if (!isTarget) {
+      setFailCount(prev => {
+        const next = prev + 1;
+        if (next >= 3) {
+          triggerAI('看来这些无用词干扰太大，俺老孙施法替你把关键信息挑出来了！');
+          // provide solution
+          const allTargetIndices: number[] = [];
+          TEXT_CHUNK.forEach((w, i) => {
+            if (TARGETS.find(t => t.word === w)) allTargetIndices.push(i);
+          });
+          setClickedIndices(allTargetIndices);
+          const solvedCounts: Record<string, number> = {};
+          TARGETS.forEach(t => solvedCounts[t.word] = t.targetCount);
+          setCounts(solvedCounts);
+        } else {
+          triggerAI('点错啦！“' + word + '”在词云图里可能不那么重要哦，它是我们要“清洗”掉的词。再找找有意义的关键词！');
+        }
+        return next;
+      });
       return;
     }
     
     const current = counts[word] || 0;
-    const target = TARGETS.find(t => t.word === word)!.targetCount;
+    const target = isTarget.targetCount;
     if (current >= target) return;
 
     playSuccess();
@@ -105,6 +126,14 @@ export const Stage3: React.FC<Props> = ({ onComplete }) => {
       </div>
 
       <div className="w-full max-w-5xl mt-8 flex flex-col mb-48 z-10 relative">
+        <div className="bg-brand-cyan/10 border border-brand-cyan/20 rounded-xl p-4 mb-6">
+          <p className="text-sm text-brand-cyan font-bold mb-2">【科学小知识：过滤清洗】</p>
+          <p className="text-xs text-white/70 leading-relaxed">
+            在一段文字里，有些词（比如“的”、“了”、“是”）虽然出现次数很多，但并没有实际含义。
+            我们把这些词叫做<b>“停用词”</b>。在生成词云图之前，必须通过“过滤清洗”把它们扔掉，才能让真正的核心词显现出来！
+          </p>
+        </div>
+
         {step === 1 && (
           <div className="w-full flex flex-col lg:flex-row gap-8">
              {/* Left area: Text cloud */}

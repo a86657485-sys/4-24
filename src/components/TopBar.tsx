@@ -8,11 +8,11 @@ interface Props {
 }
 
 const STAGES = [
-  { id: 1, name: '五行山', icon: '⚡' },
-  { id: 2, name: '高老庄', icon: '✨' },
-  { id: 3, name: '流沙河', icon: '🌙' },
-  { id: 4, name: '火焰山', icon: '🔥' },
-  { id: 5, name: '灵山', icon: '🔱' },
+  { id: 1, name: '初识词云', icon: '⚡' },
+  { id: 2, name: '文本分词', icon: '✨' },
+  { id: 3, name: '过滤清洗', icon: '🌙' },
+  { id: 4, name: '词频统计', icon: '🔥' },
+  { id: 5, name: '生成词云图', icon: '🔱' },
 ];
 
 export const TopBar: React.FC<Props> = ({ stage, xp }) => {

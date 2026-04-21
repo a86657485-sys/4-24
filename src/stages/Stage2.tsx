@@ -21,6 +21,8 @@ const SliceGame: React.FC<SliceGameProps> = ({ sentence, correctSlices, onFinish
   const [errorIndex, setErrorIndex] = useState<number | null>(null);
   const [successIndex, setSuccessIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [failCount, setFailCount] = useState(0);
+  const [showSolution, setShowSolution] = useState(false);
   const chars = sentence.split('');
 
   // Check win condition
@@ -45,7 +47,18 @@ const SliceGame: React.FC<SliceGameProps> = ({ sentence, correctSlices, onFinish
     } else {
       playError();
       setErrorIndex(index);
-      triggerAI('在分词体验关卡中，学生切错了字词的边界（比如把完整的词切碎了，或者切的位置不对）。请以孙悟空的口吻纠正他，词语要表达完整的意思，不要胡乱切碎！');
+      const nextFails = failCount + 1;
+      setFailCount(nextFails);
+      
+      if (nextFails >= 3) {
+        triggerAI('看来这句分词有难度，俺老孙施法替你解开了！仔细观察切分的位置哦！');
+        setShowSolution(true);
+        setTimeout(() => {
+          setSlices(correctSlices);
+        }, 1500);
+      } else {
+        triggerAI('在分词体验关卡中，学生切错了字词的边界。请孙悟空口吻提示：词语要表达完整的意思，不要胡乱切碎！');
+      }
       setTimeout(() => setErrorIndex(null), 500);
     }
   };
@@ -162,6 +175,14 @@ export const Stage2: React.FC<Props> = ({ onComplete }) => {
       </div>
 
       <div className="w-full max-w-5xl mt-8 flex flex-col items-center mb-48 z-10 relative">
+        <div className="bg-brand-cyan/10 border border-brand-cyan/20 rounded-xl p-4 mb-6 w-full max-w-2xl">
+          <p className="text-sm text-brand-cyan font-bold mb-2">【科学小知识：文本分词】</p>
+          <p className="text-xs text-white/70 leading-relaxed">
+            计算机无法像人类一样瞬间读懂一句话。要让电脑处理文本，首先得通过<b>“分词”</b>，将一句话拆解成一个个独立的、有意义的词语单位。
+            这是自然语言处理的第一步！
+          </p>
+        </div>
+        
         {step === 1 && (
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full flex">
               <div className="flex-1">
