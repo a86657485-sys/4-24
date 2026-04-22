@@ -7,12 +7,13 @@ import { useAI } from '../contexts/AIContext';
 const DEEPSEEK_API_KEY = "sk-eb65e011c69a4e1cb667eecdfce990a8";
 
 interface Props {
-  onComplete: () => void;
+  onComplete: (score: number, extraData?: any) => void;
   playerName: string;
 }
 
 export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
   const { triggerAI } = useAI();
+  const [showIntroModal, setShowIntroModal] = useState(true);
   const [rawText, setRawText] = useState('');
   const [step, setStep] = useState(0); // 0:input, 1:segmented, 2:cleaned, 3:counted, 4:cloud
   
@@ -106,6 +107,7 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
       setWords(res.split(/[\s,，。、]+/).filter(w => w.trim().length > 0));
       setStep(1);
       playSuccess();
+      triggerAI('太棒了，分词完成！接下来请点击下一步【过滤清洗】');
     } catch (e) {
       triggerAI('API调用太拥挤啦，一直施法中失败了，请引导学生重新点击自动分词尝试！');
     } finally {
@@ -129,6 +131,7 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
       setCleaned(res.split(/[\s,，。、]+/).filter(w => w.trim().length > 0));
       setStep(2);
       playSuccess();
+      triggerAI('清洗大成功！脏东西全没了。快来点击第三步【词频统计】吧！');
     } catch {
       triggerAI('网络清洗发生波动，请让学生再试一次。');
     } finally {
@@ -156,6 +159,7 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
     setWordFreq(result);
     setStep(3);
     playSuccess();
+    triggerAI('数据出炉！谁出现的次数最多？来点终极魔法，点击【召唤词云】！');
     setIsLoadingStep(null);
   };
 
@@ -191,9 +195,46 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
 
   return (
     <div className="flex flex-col max-w-6xl mx-auto py-8 px-4 relative min-h-screen">
+      
+      {/* Intro Modal Overlay */}
+      <AnimatePresence>
+        {showIntroModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-bg-deep/90 backdrop-blur-md p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-glass border border-brand-gold/50 rounded-2xl p-8 max-w-2xl w-full shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+            >
+               <h2 className="text-3xl font-bold bg-gradient-to-br from-brand-gold to-[#FFF8DC] text-transparent bg-clip-text mb-6 text-center">
+                 🐉 欢迎来到【全流程实战实验室】
+               </h2>
+               <div className="text-white/80 space-y-4 mb-8 text-lg">
+                 <p>前面的关卡中，你已经学会了魔法词云的各个独立部件。现在，你要将它们组合成一条全自动流水线！</p>
+                 <div className="bg-black/40 p-4 rounded-xl border border-white/10 space-y-3">
+                   <p className="flex items-center gap-2"><span className="text-2xl">✂️</span> <b>第一步：文本分词</b> - 将长篇大论切成词语小块。</p>
+                   <p className="flex items-center gap-2"><span className="text-2xl">🧹</span> <b>第二步：过滤清洗</b> - 扔掉“的”、“了”等没有用的杂质词。</p>
+                   <p className="flex items-center gap-2"><span className="text-2xl">🧮</span> <b>第三步：词频统计</b> - 数一数哪个词出现的次数最多。</p>
+                   <p className="flex items-center gap-2"><span className="text-2xl">✨</span> <b>第四步：召唤词云</b> - 让数据化作美丽的云图！</p>
+                 </div>
+                 <p className="text-brand-cyan font-bold italic mt-4 text-center">只有严格按照流水线顺序，才能召唤出最完美的词云哦！</p>
+               </div>
+               <Button onClick={() => setShowIntroModal(false)} className="w-full py-4 text-xl shadow-[0_0_20px_rgba(255,215,0,0.4)]">
+                 我已了解，立即进入实战！
+               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Loading Overlay Modal */}
       <AnimatePresence>
-        {isLoadingStep && (
+        {(isLoadingStep || isGeneratingText) && (
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
@@ -206,7 +247,7 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
               transition={{ duration: 1.5, repeat: Infinity }}
               className="text-2xl font-bold text-brand-gold drop-shadow-md"
             >
-              {loadingMessage}
+              {isGeneratingText ? '正在施展灵动分身，从天界抓取一段文字素材...' : loadingMessage}
             </motion.p>
           </motion.div>
         )}
@@ -257,19 +298,19 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
         <div className="flex-1 flex flex-col gap-4">
            {/* Pipeline tools */}
            <div className="flex flex-row items-center gap-1 flex-none bg-black/20 p-2 rounded-xl border border-white/10">
-             <button onClick={handleStep1} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 1 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+             <button onClick={handleStep1} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 1 ? 'bg-[#2ecc71]/40 border-[#2ecc71] shadow-[0_0_10px_rgba(46,204,113,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
                 ✂️ 文本分词
              </button>
              <span className="text-white/20 text-xs">▶</span>
-             <button onClick={handleStep2} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 2 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+             <button onClick={handleStep2} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 2 ? 'bg-[#2ecc71]/40 border-[#2ecc71] shadow-[0_0_10px_rgba(46,204,113,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
                 🧹 过滤清洗
              </button>
              <span className="text-white/20 text-xs">▶</span>
-             <button onClick={handleStep3} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 3 ? 'bg-brand-cyan/40 border-brand-cyan/50 shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+             <button onClick={handleStep3} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 3 ? 'bg-[#2ecc71]/40 border-[#2ecc71] shadow-[0_0_10px_rgba(46,204,113,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
                 🧮 词频统计
              </button>
              <span className="text-white/20 text-xs">▶</span>
-             <button onClick={handleStep4} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 4 ? 'bg-brand-gold/40 border-brand-gold/50 shadow-[0_0_10px_rgba(255,215,0,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
+             <button onClick={handleStep4} className={`py-2 px-1 flex-1 rounded-lg text-xs md:text-sm font-bold transition-all text-white text-center border ${step >= 4 ? 'bg-[#2ecc71]/40 border-[#2ecc71] shadow-[0_0_10px_rgba(46,204,113,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/20'}`}>
                 ✨ 召唤词云
              </button>
            </div>
@@ -377,8 +418,11 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
                height={400}
              />
            </div>
-           <Button onClick={onComplete} className="mt-8 px-10 py-4 text-xl">
-              恭喜结业！返回首页 🏆
+           <Button onClick={() => {
+             const imgData = canvasRef.current?.toDataURL('image/png');
+             onComplete(50, { finalWordFreq: wordFreq, wordCloudImage: imgData });
+           }} className="mt-8 px-10 py-4 text-xl">
+              进入终极试炼（知识测验） 🏆
            </Button>
         </motion.div>
       )}

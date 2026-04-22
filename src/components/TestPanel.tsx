@@ -60,29 +60,32 @@ export const TestPanel: React.FC<Props> = ({ onJump }) => {
                 
                 <div className="space-y-2">
                   <h4 className="text-sm text-brand-cyan font-bold">🚀 快速跳转 (跳关)</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => onJump(0)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">0. 初始</button>
-                    <button onClick={() => onJump(1)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">1. 介绍</button>
-                    <button onClick={() => onJump(2)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">2. 分词</button>
-                    <button onClick={() => onJump(3)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">3. 词频</button>
-                    <button onClick={() => onJump(4)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">4. 清洗</button>
-                    <button onClick={() => onJump(5)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">5. 生成</button>
-                    <button onClick={() => onJump(6)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">6. 实战</button>
-                    <button onClick={() => onJump(7)} className="col-span-3 bg-white/10 hover:bg-brand-gold hover:text-black py-1 rounded text-xs transition-colors">7. 成绩单 (结束)</button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => onJump(0)} className="col-span-2 bg-white/10 hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors">0. 登入仙境</button>
+                    <button onClick={() => onJump(1)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors">1. 探索词云</button>
+                    <button onClick={() => onJump(2)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors">2. 文本分词</button>
+                    <button onClick={() => onJump(3)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors">3. 过滤清洗</button>
+                    <button onClick={() => onJump(4)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors">4. 词频统计</button>
+                    <button onClick={() => onJump(5)} className="bg-white/10 hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors">5. 生成云图</button>
+                    <button onClick={() => onJump(6)} className="bg-brand-gold/20 text-brand-gold hover:bg-brand-gold hover:text-black py-1.5 rounded text-xs transition-colors border border-brand-gold/50">6. 全流实战</button>
+                    <button onClick={() => onJump(7)} className="bg-purple-500/20 text-purple-300 hover:bg-purple-500 hover:text-white py-1.5 rounded text-xs transition-colors border border-purple-500/50">7. 终极测验</button>
+                    <button onClick={() => onJump(8)} className="col-span-2 bg-white/10 hover:bg-brand-gold hover:text-black py-2 rounded text-xs transition-colors">8. 结算报告</button>
                   </div>
                 </div>
 
                 <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
                   <h4 className="text-sm text-brand-red font-bold">📖 关卡参考答案</h4>
                   
-                  <div className="bg-black/40 p-3 rounded-lg text-xs space-y-2 text-white/80">
-                    <p><strong className="text-white">关卡 1:</strong><br/>Q1: B (出现次数越多字体越大)<br/>Q2: 词语出现的频率、重要程度<br/>Q3: 连线 词云图-文本数据可视化 饼图-占比 柱状-比较</p>
+                  <div className="bg-black/40 p-3 rounded-lg text-[11px] space-y-2 text-white/80 leading-relaxed">
+                    <p><strong className="text-white">关卡 1:</strong><br/>Q1: 出现次数最多<br/>Q2: 词语出现的频率、重要程度</p>
                     
                     <p><strong className="text-white">关卡 2:</strong><br/>Lv1: 唐僧 / 骑马 / 咚咚咚 / 后面 / 跟着 / 孙悟空<br/>Lv2: 悟 空 / 拔 出 / 一 根 / 毫 毛 / 吹 / 口 / 仙 气 / 变 出 / 千 百 个 / 小 猴</p>
                     
-                    <p><strong className="text-white">关卡 3:</strong><br/>悟空(4) 妖怪(2) 金箍棒(3) 天宫(2) 法术(2)</p>
+                    <p><strong className="text-white">关卡 3 (清洗):</strong><br/>停用: 的, 了, 在, 也<br/>有效: 孙悟空, 芭蕉扇, 打, 火焰山<br/>同义词: 悟空/大师兄/行者(连🐒), 沙悟净/沙僧(连🧔)</p>
                     
-                    <p><strong className="text-white">关卡 4:</strong><br/>停用: 的, 了, 在, 也<br/>有效: 孙悟空, 芭蕉扇, 打, 火焰山<br/>同义词: 悟空/大师兄/行者(连🐒), 沙悟净/沙僧(连🧔)</p>
+                    <p><strong className="text-white">关卡 4 (统计):</strong><br/>悟空(4) 妖怪(2) 金箍棒(3) 天宫(2) 法术(2)</p>
+
+                    <p><strong className="text-white">关卡 7 (测验):</strong><br/>共15题，均取自信息课理论</p>
                   </div>
                 </div>
 

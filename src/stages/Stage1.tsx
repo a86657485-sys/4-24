@@ -5,7 +5,7 @@ import { Button } from '../components/Button';
 import { playError, playSuccess } from '../utils/audio';
 
 interface Props {
-  onComplete: (score: number) => void;
+  onComplete: (score: number, extraData?: any) => void;
 }
 
 const CLOUD_WORDS = [
@@ -61,7 +61,7 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
       setQ2Answered(true);
       setScore(s => s + 15);
       setErrorMsg('');
-      setStep(3);
+      setStep(4);
       playSuccess();
     } else {
       playError();
@@ -196,7 +196,7 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
              <p className="text-sm text-white/80 leading-relaxed mb-4">词云图能告诉我们什么信息？(多选)</p>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-auto">
                {['词语出现的频率', '词语的意思', '重要程度', '作者是谁'].map((opt, i) => (
-                 <label key={i} className={`flex items-center space-x-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer transition-all hover:bg-brand-gold/10 \${q2Selection.includes(i) ? 'border-brand-gold bg-brand-gold/10' : ''}`}>
+                 <label key={i} className={`flex items-center space-x-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer transition-all hover:bg-brand-gold/10 ${q2Selection.includes(i) ? 'border-brand-gold bg-brand-gold/10' : ''}`}>
                    <input type="checkbox" checked={q2Selection.includes(i)} onChange={() => toggleQ2Selection(i)} className="w-5 h-5 accent-brand-gold hidden" />
                    <span className="text-brand-gold font-bold">{q2Selection.includes(i) ? '✓' : '—'}</span>
                    <span>{opt}</span>
@@ -207,49 +207,13 @@ export const Stage1: React.FC<Props> = ({ onComplete }) => {
           </motion.div>
         )}
 
-        {/* Q3 */}
-        {step >= 3 && step < 4 && (
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-glass p-8 rounded-2xl flex-1 flex flex-col">
-             <h3 className="text-xl font-bold mb-4 border-b border-white/10 pb-2">探究任务 03</h3>
-             <p className="text-sm text-white/80 leading-relaxed mb-6">词云图属于哪类数据呈现方式？(点击右侧按钮给左侧配对)</p>
-             <div className="flex justify-between items-center gap-4 mb-auto">
-               <div className="space-y-4 flex-1">
-                 {[{id:'t1', t:'词云图'}, {id:'t2', t:'柱状图'}, {id:'t3', t:'饼图'}].map(t => (
-                   <div key={t.id} className={`p-4 rounded-xl border \${dragMatches[t.id] ? 'bg-brand-gold/20 border-brand-gold text-brand-gold' : 'bg-white/5 border-white/20'} text-center font-bold text-sm`}>
-                     {t.t}
-                     {dragMatches[t.id] && " ✅"}
-                   </div>
-                 ))}
-               </div>
-               
-               <div className="space-y-4 flex-1">
-                 {[{id:'i3', t:'占比分析'}, {id:'i1', t:'文本数据可视化'}, {id:'i2', t:'数值比较'}].map(i => {
-                   const isMatched = Object.values(dragMatches).includes(i.id);
-                   if (isMatched) return null;
-                   
-                   return (
-                     <div key={i.id} className="flex flex-col gap-2 p-3 bg-white/5 border border-white/20 rounded-xl">
-                       <div className="text-center text-xs font-bold">{i.t}</div>
-                       <div className="flex gap-1 justify-center">
-                         {!dragMatches['t1'] && <button onClick={() => checkDragMatch('t1', i.id)} className="flex-1 text-[10px] bg-brand-gold/80 rounded py-1 text-black font-bold">词云</button>}
-                         {!dragMatches['t2'] && <button onClick={() => checkDragMatch('t2', i.id)} className="flex-1 text-[10px] bg-blue-500/80 rounded py-1 text-white font-bold">柱状</button>}
-                         {!dragMatches['t3'] && <button onClick={() => checkDragMatch('t3', i.id)} className="flex-1 text-[10px] bg-purple-500/80 rounded py-1 text-white font-bold">饼图</button>}
-                       </div>
-                     </div>
-                   );
-                 })}
-               </div>
-             </div>
-          </motion.div>
-        )}
-
         {/* Summary */}
         {step >= 4 && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-glass border-2 border-brand-gold p-8 rounded-2xl flex-1 flex flex-col justify-center items-center text-center">
              <div className="text-5xl mb-4">✨</div>
              <h3 className="text-2xl font-bold bg-gradient-to-br from-brand-gold to-[#FFF8DC] text-transparent bg-clip-text mb-4">关卡小结</h3>
              <p className="text-lg mb-8 text-white/80">✓ 词云图 = 文本数据 + 词频 + 可视化</p>
-             <Button onClick={() => onComplete(score)} className="w-full">继续冒险 →</Button>
+             <Button onClick={() => onComplete(score, { failCounts, finalQ2Selection: q2Selection })} className="w-full">继续冒险 →</Button>
           </motion.div>
         )}
 

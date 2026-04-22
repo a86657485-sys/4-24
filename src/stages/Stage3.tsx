@@ -6,7 +6,7 @@ import { playSuccess } from '../utils/audio';
 import { useAI } from '../contexts/AIContext';
 
 interface Props {
-  onComplete: (score: number) => void;
+  onComplete: (score: number, extraData?: any) => void;
 }
 
 const TEXT_CHUNK = [
@@ -258,7 +258,7 @@ export const Stage3: React.FC<Props> = ({ onComplete }) => {
                 </div>
 
                 <div className="mt-8 text-center flex justify-center">
-                   <Button onClick={() => onComplete(score)} className="w-[300px]">下一关 →</Button>
+                   <Button onClick={() => onComplete(score, { wordFrequencies: counts, failedAttempts: failCount })} className="w-[300px]">下一关 →</Button>
                 </div>
              </motion.div>
           </div>

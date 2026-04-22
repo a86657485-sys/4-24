@@ -6,13 +6,13 @@ import { playCut, playError, playSuccess } from '../utils/audio';
 import { useAI } from '../contexts/AIContext';
 
 interface Props {
-  onComplete: (score: number) => void;
+  onComplete: (score: number, extraData?: any) => void;
 }
 
 interface SliceGameProps {
   sentence: string;
   correctSlices: number[];
-  onFinish: (score: number) => void;
+  onFinish: (score: number, details: any) => void;
 }
 
 const SliceGame: React.FC<SliceGameProps> = ({ sentence, correctSlices, onFinish }) => {
@@ -30,9 +30,9 @@ const SliceGame: React.FC<SliceGameProps> = ({ sentence, correctSlices, onFinish
     const isWin = correctSlices.every(s => slices.includes(s));
     if (isWin) {
       playSuccess();
-      setTimeout(() => onFinish(score), 1000);
+      setTimeout(() => onFinish(score, { failCount, slices }), 1000);
     }
-  }, [slices, correctSlices, score, onFinish]);
+  }, [slices, correctSlices, score, onFinish, failCount]);
 
   const handleSlice = (index: number) => {
     if (slices.includes(index)) return;
@@ -90,7 +90,7 @@ const SliceGame: React.FC<SliceGameProps> = ({ sentence, correctSlices, onFinish
                       className="w-6 h-16 sm:w-10 sm:h-20 flex items-center justify-center cursor-crosshair group relative z-10 mx-[-2px] transition-transform hover:scale-110"
                     >
                        {/* The visible slice mark */}
-                       <div className={`w-[3px] h-[70%] transition-all rounded-full \${slices.includes(i) ? 'bg-brand-gold shadow-[0_0_15px_#FFD700]' : 'bg-white/20 group-hover:bg-brand-gold/60 group-hover:w-2 group-hover:h-[90%]'}`} />
+                       <div className={`w-[3px] h-[70%] transition-all rounded-full ${slices.includes(i) ? 'bg-brand-gold shadow-[0_0_15px_#FFD700] w-1' : 'bg-transparent group-hover:bg-brand-gold/60 group-hover:w-2 group-hover:h-[90%]'}`} />
                        
                        {/* Cutting animation */}
                        <AnimatePresence>
@@ -150,18 +150,21 @@ function chunksAreComplete(chunkIndex: number, slices: number[], correctSlices: 
 export const Stage2: React.FC<Props> = ({ onComplete }) => {
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
+  const [levelDetails, setLevelDetails] = useState<any[]>([]);
 
   useEffect(() => {
     setTimeout(() => setStep(1), 3000);
   }, []);
 
-  const handleLevel1 = (s: number) => {
+  const handleLevel1 = (s: number, details: any) => {
     setScore(score + s);
+    setLevelDetails(prev => [...prev, { level: 1, ...details }]);
     setStep(2);
   };
 
-  const handleLevel2 = (s: number) => {
+  const handleLevel2 = (s: number, details: any) => {
     setScore(score + s);
+    setLevelDetails(prev => [...prev, { level: 2, ...details }]);
     setStep(3);
   };
 
@@ -218,7 +221,7 @@ export const Stage2: React.FC<Props> = ({ onComplete }) => {
                把连续的文字拆成有意义的词语，这个过程叫<strong className="text-brand-gold text-2xl mx-2">“分词”</strong>。<br />
                这也是我们制作词云图非常重要的一步！
              </p>
-             <Button onClick={() => onComplete(score)} className="w-[300px] text-lg py-4">继续冒险 →</Button>
+             <Button onClick={() => onComplete(score, { sliceDetails: levelDetails })} className="w-[300px] text-lg py-4">继续冒险 →</Button>
           </motion.div>
         )}
       </div>

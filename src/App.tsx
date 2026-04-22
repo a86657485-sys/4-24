@@ -8,8 +8,8 @@ import { Stage3 } from './stages/Stage3';
 import { Stage4 } from './stages/Stage4';
 import { Stage5 } from './stages/Stage5';
 import { Stage6 } from './stages/Stage6';
+import { QuizStage } from './stages/QuizStage';
 import { Outro } from './stages/Outro';
-import { Dashboard } from './components/Dashboard';
 import { AnimatePresence, motion } from 'motion/react';
 import { TestPanel } from './components/TestPanel';
 import { AITutorProvider } from './contexts/AIContext';
@@ -41,7 +41,7 @@ export default function App() {
           failCount: failCount,
           details: extraData || {}
         })
-      }).catch(err => console.log('Notice: Local DB saving skipped', err));
+      }).catch(err => console.log('Notice: Local saving skipped', err));
 
       setGameState(prev => {
         const next = { ...prev };
@@ -70,7 +70,7 @@ export default function App() {
       <AITutorProvider playerName={gameState.playerName}>
         <Background />
       
-      {gameState.currentStage > 0 && gameState.currentStage < 7 && (
+      {gameState.currentStage > 0 && gameState.currentStage <= 7 && (
         <TopBar stage={gameState.currentStage} xp={gameState.totalXP} />
       )}
       
@@ -78,13 +78,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           {gameState.currentStage === 0 && (
             <motion.div key="intro" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
-              <Intro onStart={handleStart} onEnterDashboard={() => handleJump(-1)} />
-            </motion.div>
-          )}
-
-          {gameState.currentStage === -1 && (
-            <motion.div key="dashboard" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
-              <Dashboard onBack={() => handleJump(0)} />
+              <Intro onStart={handleStart} />
             </motion.div>
           )}
 
@@ -101,14 +95,14 @@ export default function App() {
           )}
 
           {gameState.currentStage === 3 && (
-            <motion.div key="stage3" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
-              <Stage3 onComplete={wrapComplete(3)} />
+            <motion.div key="stage4" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
+              <Stage4 onComplete={wrapComplete(3)} />
             </motion.div>
           )}
 
           {gameState.currentStage === 4 && (
-            <motion.div key="stage4" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
-              <Stage4 onComplete={wrapComplete(4)} />
+            <motion.div key="stage3" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
+              <Stage3 onComplete={wrapComplete(4)} />
             </motion.div>
           )}
 
@@ -125,8 +119,24 @@ export default function App() {
           )}
 
           {gameState.currentStage === 7 && (
-            <motion.div key="outro" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="h-full">
+            <motion.div key="stage7" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
+              <QuizStage onComplete={wrapComplete(7)} />
+            </motion.div>
+          )}
+
+          {gameState.currentStage === 8 && (
+            <motion.div key="outro" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="h-full flex flex-col items-center">
               <Outro playerName={gameState.playerName} totalXP={gameState.totalXP} stageResults={gameState.stageResults} />
+              
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 2 }}
+                onClick={() => handleJump(6)} // Jump back to Stage 6 (实战演练)
+                className="mt-8 px-10 py-4 bg-brand-cyan/20 border border-brand-cyan text-brand-cyan font-bold rounded-xl text-xl hover:bg-brand-cyan hover:text-white transition shadow-[0_0_20px_rgba(0,255,255,0.4)]"
+              >
+                🔄 意犹未尽？使用自己的文本再次进入实战实验室
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>

@@ -10,6 +10,11 @@ interface Props {
 export const MonkeyDialog: React.FC<Props> = ({ text, show, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isClosed, setIsClosed] = useState(false);
+  const onCompleteRef = React.useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!show) {
@@ -28,12 +33,12 @@ export const MonkeyDialog: React.FC<Props> = ({ text, show, onComplete }) => {
         currentIndex++;
       } else {
         clearInterval(interval);
-        if (onComplete) onComplete();
+        if (onCompleteRef.current) onCompleteRef.current();
       }
     }, 50);
 
     return () => clearInterval(interval);
-  }, [text, show, onComplete]);
+  }, [text, show]);
 
   const isFinished = displayedText === text && text.length > 0;
 

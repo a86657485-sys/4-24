@@ -35,32 +35,6 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
   }, []);
 
   const handleGenerate = () => {
-    // Check if inputs match the properties
-    let allCorrect = true;
-    for (const key of Object.keys(inputs)) {
-      if (parseInt(inputs[key]) !== wordFreq[key]) {
-        allCorrect = false;
-        break;
-      }
-    }
-    
-    if (!allCorrect) {
-       playError();
-       const nextFails = failCount + 1;
-       setFailCount(nextFails);
-       if (nextFails >= 3) {
-         triggerAI('这些数字确实有点绕，俺老孙用神识帮你扫了一下，已经填好了！快点击开始施法吧！');
-         const correctInputs: Record<string, string> = {};
-         Object.keys(inputs).forEach(k => {
-           correctInputs[k] = (wordFreq[k] || 0).toString();
-         });
-         setInputs(correctInputs);
-       } else {
-         triggerAI('哎呀，有数字填错了！请大圣提醒他回顾刚才关卡的记忆，再仔细填一遍！');
-       }
-       return;
-    }
-
     setScore(20);
     setStep(2);
     setIsGenerating(true);
@@ -153,32 +127,24 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
           </p>
         </div>
 
-        {/* Step 1: Input form */}
+        {/* Step 1: Display stats table */}
         {step === 1 && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-glass p-8 rounded-2xl w-full max-w-xl">
-             <h3 className="text-2xl font-bold bg-gradient-to-br from-brand-gold to-[#FFF8DC] text-transparent bg-clip-text mb-8 text-center">数字施法阵</h3>
+             <h3 className="text-2xl font-bold bg-gradient-to-br from-brand-gold to-[#FFF8DC] text-transparent bg-clip-text mb-8 text-center">数字施法阵（词频数据分析）</h3>
              
              <div className="space-y-4">
                 <div className="flex justify-between items-center px-4 py-2 border-b border-white/20 text-gray-400 font-bold mb-4">
-                   <span>目标人物</span>
-                   <span>出现次数</span>
-                </div>
-                <div className="flex justify-between items-center px-6 py-4 bg-black/40 rounded-xl border border-white/10">
-                   <span className="font-bold text-xl">悟空</span>
-                   <span className="text-brand-gold text-2xl font-bold">{wordFreq['悟空']}</span>
+                   <span>关键词</span>
+                   <span>出现频率</span>
                 </div>
                 
-                {Object.keys(inputs).map(k => (
+                {Object.keys(wordFreq).map((k, idx) => (
                   <div key={k} className="flex justify-between items-center px-6 py-4 bg-white/5 hover:border-brand-gold/50 rounded-xl border border-white/10 transition-colors">
                      <span className="font-bold text-xl">{k}</span>
                      <div className="flex items-center gap-2">
-                       <input 
-                         type="number"
-                         value={inputs[k]}
-                         onChange={e => setInputs(prev => ({ ...prev, [k]: e.target.value }))}
-                         className="w-24 bg-black/50 border border-white/20 py-2 rounded-lg focus:outline-none focus:border-brand-gold text-center text-brand-gold font-bold text-xl transition-colors"
-                         placeholder="?"
-                       />
+                       <span className={`text-2xl font-bold ${idx === 0 ? 'text-brand-gold' : 'text-brand-cyan'}`}>
+                         {wordFreq[k]}
+                       </span>
                        <span className="text-white/60">次</span>
                      </div>
                   </div>
@@ -186,8 +152,8 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
              </div>
              
              <div className="mt-8 flex justify-center">
-                <Button onClick={handleGenerate} disabled={Object.values(inputs).some(v => !v)} className="w-full py-4 text-lg">
-                  ✨ 施法生成词云！
+                <Button onClick={handleGenerate} className="w-full py-4 text-lg">
+                  ✨ 绘制词云图！
                 </Button>
              </div>
           </motion.div>
@@ -223,16 +189,8 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
              
              {!isGenerating && step === 2 && (
                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mt-8">
-                  <Button onClick={requestAIFeedback} className="px-8 py-4 text-lg shadow-[0_4px_20px_rgba(255,215,0,0.4)]">
-                    🤖 让大圣点评我的作品
-                  </Button>
-               </motion.div>
-             )}
-
-             {step === 3 && !isRequestingAI && (
-                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mt-8">
-                  <Button onClick={() => onComplete(score, getFinalWords())} className="px-8 py-4 text-lg bg-gradient-to-r from-brand-cyan to-blue-500 border-none">
-                    完成取经，查看成绩单 →
+                  <Button onClick={() => onComplete(score, getFinalWords())} className="px-8 py-4 text-lg bg-gradient-to-r from-brand-cyan to-brand-gold border-none font-bold shadow-[0_0_20px_rgba(255,215,0,0.4)]">
+                    前往第六关：实战演练体验！ →
                   </Button>
                </motion.div>
              )}

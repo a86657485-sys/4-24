@@ -286,7 +286,7 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
                <li>✓ 合并指代相同角色的近义词</li>
                <li>✓ 保留重要的名词和动词</li>
              </ul>
-             <Button onClick={() => onComplete(score, { '悟空': 15, '法术': 8, '金箍棒': 10, '天宫': 6, '妖怪': 4 })} className="w-full">继续冒险 →</Button>
+             <Button onClick={() => onComplete(score, { '悟空': 15, '法术': 8, '金箍棒': 10, '天宫': 6, '妖怪': 4, failCountClassify: failCountA, failCountSynonyms: failCountB })} className="w-full">继续冒险 →</Button>
           </motion.div>
         )}
 
