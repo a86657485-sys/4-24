@@ -47,11 +47,10 @@ export const TopBar: React.FC<Props> = ({ stage, xp }) => {
       <div className="flex items-center gap-2 sm:gap-6 ml-auto">
         <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-widest hidden sm:block">第 24 课：抽取文本汇词云</div>
         <div className="bg-brand-red/20 border border-brand-red px-3 sm:px-4 py-1 rounded-full text-brand-gold font-bold text-sm">
-          XP <motion.span key={xp} initial={{ scale: 1.5, color: '#fff' }} animate={{ scale: 1, color: '#FFD700' }}>{Math.floor(xp).toString().padStart(4, '0')}</motion.span>
+          评分 <motion.span key={xp} initial={{ scale: 1.5, color: '#fff' }} animate={{ scale: 1, color: '#FFD700' }}>{Math.floor(xp).toString().padStart(3, '0')}</motion.span>/100
         </div>
       </div>
     </div>
   );
 };
-
 

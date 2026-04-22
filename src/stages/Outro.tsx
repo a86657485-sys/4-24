@@ -15,17 +15,18 @@ export const Outro: React.FC<Props> = ({ playerName, totalXP, stageResults }) =>
   }, []);
 
   const getBadge = () => {
-    if (totalXP >= 141) return { icon: '👑', name: '大师级', color: 'from-yellow-400 to-yellow-600' };
-    if (totalXP >= 101) return { icon: '🏆', name: '悟道级', color: 'from-purple-400 to-purple-600' };
-    if (totalXP >= 61) return { icon: '⚡', name: '弟子级', color: 'from-blue-400 to-blue-600' };
+    if (totalXP >= 90) return { icon: '👑', name: '大师级', color: 'from-yellow-400 to-yellow-600' };
+    if (totalXP >= 75) return { icon: '🏆', name: '悟道级', color: 'from-purple-400 to-purple-600' };
+    if (totalXP >= 60) return { icon: '⚡', name: '弟子级', color: 'from-blue-400 to-blue-600' };
     return { icon: '🌱', name: '学徒级', color: 'from-green-400 to-green-600' };
   };
 
   const badge = getBadge();
-  const maxXP = 150; // max possible xp appx
+  const stageWeights = [10, 15, 10, 15, 10, 20, 20];
+  const stageLabels = ['关卡1：认识词云', '关卡2：文本分词', '关卡3：过滤清洗', '关卡4：词频统计', '关卡5：生成词云图', '关卡6：实战演练', '关卡7：知识测验'];
 
   const handleShare = () => {
-    const text = `我在词云图大冒险里获得了【\${badge.name}】称号！总共收集了 \${totalXP} 个金币经验！一起来发现《西游记》的主角吧！`;
+    const text = `我在词云图大冒险里获得了【${badge.name}】称号！综合评分 ${totalXP}/100，一起来发现《西游记》的主角吧！`;
     navigator.clipboard.writeText(text);
     alert('成绩已复制到剪贴板！');
   };
@@ -55,31 +56,17 @@ export const Outro: React.FC<Props> = ({ playerName, totalXP, stageResults }) =>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="space-y-4 mb-8 text-left max-w-sm mx-auto">
            <div className="flex justify-between items-center border-b border-white/10 pb-2">
-             <span className="text-gray-300">总计经验 (XP)</span>
-             <span className="text-2xl font-bold text-brand-gold">{totalXP}</span>
+             <span className="text-gray-300">综合评分</span>
+             <span className="text-2xl font-bold text-brand-gold">{totalXP}/100</span>
            </div>
            
            <div className="space-y-2 mt-4 text-sm text-gray-400">
-             <div className="flex justify-between">
-               <span>关卡1：认识词云</span>
-               <span>+{stageResults[0] || 0} XP</span>
-             </div>
-             <div className="flex justify-between">
-               <span>关卡2：文本分词</span>
-               <span>+{stageResults[1] || 0} XP</span>
-             </div>
-             <div className="flex justify-between">
-               <span>关卡3：词频统计</span>
-               <span>+{stageResults[2] || 0} XP</span>
-             </div>
-             <div className="flex justify-between">
-               <span>关卡4：筛选有效词</span>
-               <span>+{stageResults[3] || 0} XP</span>
-             </div>
-             <div className="flex justify-between">
-               <span>关卡5：生成词云图</span>
-               <span>+{stageResults[4] || 0} XP</span>
-             </div>
+             {stageLabels.map((label, index) => (
+               <div key={label} className="flex justify-between">
+                 <span>{label}</span>
+                 <span>{stageResults[index] || 0} / {stageWeights[index]} 分</span>
+               </div>
+             ))}
            </div>
         </motion.div>
 

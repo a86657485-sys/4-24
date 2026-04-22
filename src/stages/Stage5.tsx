@@ -4,7 +4,6 @@ import { MonkeyDialog } from '../components/MonkeyDialog';
 import { Button } from '../components/Button';
 import { drawWordCloud } from '../utils/canvas';
 import { playSuccess, playError } from '../utils/audio';
-import { useAI } from '../contexts/AIContext';
 
 interface Props {
   wordFreq: Record<string, number>;
@@ -13,7 +12,6 @@ interface Props {
 }
 
 export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) => {
-  const { triggerAI } = useAI();
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   
@@ -72,23 +70,40 @@ export const Stage5: React.FC<Props> = ({ wordFreq, playerName, onComplete }) =>
     setIsRequestingAI(true);
     setStep(3);
     try {
-      // In Vite, we use process.env.GEMINI_API_KEY from the defined block or import.meta.env
-      const key = process.env.GEMINI_API_KEY;
-      if (!key) throw new Error("API key missing");
+      const apiKey = process.env.LLM_API_KEY;
+      const model = process.env.LLM_MODEL || 'qwen-plus';
+      const baseUrl = (process.env.LLM_API_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '');
+
+      if (!apiKey) throw new Error("API key missing");
       
       const words = Object.keys(wordFreq).map(k => `${k}: ${wordFreq[k]}`).join(', ');
       const prompt = `学生【${playerName}】是四年级小学生，刚刚完成了第一张词云图。词云数据：${words}。请用孙悟空的语气，给出50字以内的鼓励评价，指出词云图反映出的主角信息，并提一个改进建议。不要使用markdown格式发声。`;
       
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 150, temperature: 0.8 }
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: '你是孙悟空风格的语文助教，请用活泼、鼓励的小学生口吻回答，限制在50字以内，不要使用markdown。'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 150,
+          temperature: 0.8
         })
       });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "俺老孙觉得你做得太棒了！继续保持！";
+      const text = data.choices?.[0]?.message?.content || "俺老孙觉得你做得太棒了！继续保持！";
       setAiFeedback(text);
     } catch (e) {
       console.error(e);

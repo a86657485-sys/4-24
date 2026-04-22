@@ -71,9 +71,9 @@ export const Intro: React.FC<Props> = ({ onStart, onEnterDashboard }) => {
                 </div>
                 
                 <Button 
-                   onClick={() => onStart(name || '神秘旅人')}
-                   disabled={!name}
-                   className={!name ? 'opacity-50 cursor-not-allowed w-full text-lg mt-4' : 'w-full text-lg mt-4'}
+                   onClick={() => onStart(name.trim() || '神秘旅人')}
+                   disabled={!name.trim()}
+                   className={!name.trim() ? 'opacity-50 cursor-not-allowed w-full text-lg mt-4' : 'w-full text-lg mt-4'}
                 >
                    开始取经
                 </Button>
@@ -84,4 +84,3 @@ export const Intro: React.FC<Props> = ({ onStart, onEnterDashboard }) => {
     </div>
   );
 };
-

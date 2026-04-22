@@ -420,7 +420,14 @@ export const Stage6: React.FC<Props> = ({ onComplete, playerName }) => {
            </div>
            <Button onClick={() => {
              const imgData = canvasRef.current?.toDataURL('image/png');
-             onComplete(50, { finalWordFreq: wordFreq, wordCloudImage: imgData });
+             onComplete(50, {
+               rawTextPreview: rawText.slice(0, 200),
+               segmentedWordCount: words.length,
+               cleanedWordCount: cleaned.length,
+               finalWordFreq: wordFreq,
+               wordCloudImage: imgData,
+               failCount,
+             });
            }} className="mt-8 px-10 py-4 text-xl">
               进入终极试炼（知识测验） 🏆
            </Button>

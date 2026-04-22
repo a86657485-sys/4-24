@@ -52,6 +52,7 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
   
   // Part A state
   const [remainingWords, setRemainingWords] = useState(WORDS);
+  const [selectedWordId, setSelectedWordId] = useState<number | null>(null);
   const [animatingId, setAnimatingId] = useState<number | null>(null);
   const [animTarget, setAnimTarget] = useState<'trash' | 'chest' | null>(null);
 
@@ -66,6 +67,7 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
   const handleClassify = (id: number, target: 'stop' | 'valid', uTarget: 'trash' | 'chest') => {
     const word = remainingWords.find(w => w.id === id);
     if (!word) return;
+    setSelectedWordId(null);
 
     if (word.type === target) {
       playSuccess();
@@ -86,6 +88,7 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
       if (nextFails >= 3) {
         triggerAI('别灰心，俺老孙施法把剩下的词都放对位置了！仔细看看分类规律。');
         setRemainingWords([]);
+        setSelectedWordId(null);
       } else {
         triggerAI('分类错啦！再想想，“' + word.text + '”在句子中是必不可少的关键词，还是没有实义的虚词？');
       }
@@ -101,6 +104,8 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
       setTimeout(() => setStep(2), 1500);
     }
   }, [remainingWords, step]);
+
+  const selectedWord = remainingWords.find((word) => word.id === selectedWordId) || null;
 
   const handleSynClick = (id: string, targetId: string) => {
     if (selectedSyn === id) {
@@ -180,18 +185,52 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
                        exit={{ opacity: 0, scale: 0 }}
                        className="relative"
                      >
-                       <div className="px-6 py-4 bg-glass text-xl font-bold hover:border-brand-gold cursor-default group transition-colors">
+                       <button
+                         type="button"
+                         onClick={() => setSelectedWordId(prev => prev === w.id ? null : w.id)}
+                         className={`px-6 py-4 bg-glass text-xl font-bold border transition-colors ${
+                           selectedWordId === w.id
+                             ? 'border-brand-gold shadow-[0_0_20px_rgba(255,215,0,0.35)] bg-brand-gold/10'
+                             : 'border-white/10 hover:border-brand-gold'
+                         }`}
+                       >
                           {w.text}
-                          
-                          {/* Action buttons (Mobile friendly instead of drag) */}
-                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                             <button onClick={(e) => { e.stopPropagation(); handleClassify(w.id, 'stop', 'trash'); }} className="bg-brand-red text-white text-xs px-3 py-2 rounded-xl shadow-md border border-white/20">🗑️ 停用</button>
-                             <button onClick={(e) => { e.stopPropagation(); handleClassify(w.id, 'valid', 'chest'); }} className="bg-brand-gold text-black text-xs px-3 py-2 rounded-xl shadow-md font-bold">⭐ 有效</button>
-                          </div>
-                       </div>
+                       </button>
                      </motion.div>
                    ))}
                 </AnimatePresence>
+             </div>
+
+             <div className="w-full max-w-xl px-4">
+               <div className="bg-black/40 border border-white/10 rounded-2xl p-4 md:p-5 min-h-[108px] flex flex-col items-center justify-center gap-4">
+                 {selectedWord ? (
+                   <>
+                     <p className="text-center text-white/80">
+                       已选择
+                       <span className="text-brand-gold font-bold mx-2 text-xl">{selectedWord.text}</span>
+                       请判断它属于哪一类
+                     </p>
+                     <div className="flex flex-col sm:flex-row gap-3 w-full">
+                       <button
+                         type="button"
+                         onClick={() => handleClassify(selectedWord.id, 'stop', 'trash')}
+                         className="flex-1 bg-brand-red text-white px-4 py-3 rounded-2xl shadow-md border border-white/20 font-bold"
+                       >
+                         🗑️ 这是停用词
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => handleClassify(selectedWord.id, 'valid', 'chest')}
+                         className="flex-1 bg-brand-gold text-black px-4 py-3 rounded-2xl shadow-md font-bold"
+                       >
+                         ⭐ 这是有效词
+                       </button>
+                     </div>
+                   </>
+                 ) : (
+                   <p className="text-center text-white/50">先点一个词语，再选择“停用词”或“有效词”。</p>
+                 )}
+               </div>
              </div>
              
              <div className="flex justify-around w-full max-w-4xl mt-12 gap-6 px-4">
@@ -294,4 +333,3 @@ export const Stage4: React.FC<Props> = ({ onComplete }) => {
     </div>
   );
 };
-

@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useRef, ReactNode } from 'react';
 import { AIAssistant, LocalMessage } from '../components/AIAssistant';
 
-const DEEPSEEK_API_KEY = "sk-eb65e011c69a4e1cb667eecdfce990a8";
-
 interface AIContextType {
   triggerAI: (instruction: string) => void;
 }
@@ -19,15 +17,26 @@ export const AITutorProvider = ({ children, playerName }: { children: ReactNode,
   ]);
   const lastTrigger = useRef(0);
 
-  const callDeepSeek = async (msgs: LocalMessage[]) => {
+  const callAI = async (msgs: LocalMessage[]) => {
+    const apiKey = process.env.LLM_API_KEY;
+    const model = process.env.LLM_MODEL || 'qwen-plus';
+    const baseUrl = (process.env.LLM_API_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '');
+
+    if (!apiKey) {
+      throw new Error('Missing API key');
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
-      const res = await fetch('https://api.deepseek.com/chat/completions', {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model,
           messages: msgs.map(m => ({ role: m.role, content: m.content })),
           temperature: 0.7
         }),
@@ -52,7 +61,7 @@ export const AITutorProvider = ({ children, playerName }: { children: ReactNode,
     setIsAILoading(true);
     const newMsgs = [...messages, { role: 'user' as const, content: `[系统动作提示]：${instruction}` }];
     try {
-      const reply = await callDeepSeek(newMsgs);
+      const reply = await callAI(newMsgs);
       setMessages(prev => [...prev, { role: 'user', content: instruction, hidden: true }, { role: 'assistant', content: reply }]);
     } catch(e) {
       console.error(e);
@@ -66,7 +75,7 @@ export const AITutorProvider = ({ children, playerName }: { children: ReactNode,
     setMessages(newMsgs);
     setIsAILoading(true);
     try {
-      const reply = await callDeepSeek(newMsgs.filter(m => !m.hidden));
+      const reply = await callAI(newMsgs.filter(m => !m.hidden));
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch(e) {
       setMessages(prev => [...prev, { role: 'assistant', content: '俺老孙的筋斗云卡住了，被妖怪拦住了网线，再说一遍？' }]);
