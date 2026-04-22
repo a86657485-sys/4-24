@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { MonkeyDialog } from '../components/MonkeyDialog';
 import { Button } from '../components/Button';
+import { BarChart3 } from 'lucide-react';
 
 interface Props {
   onStart: (name: string) => void;
+  onEnterDashboard?: () => void;
 }
 
-export const Intro: React.FC<Props> = ({ onStart }) => {
+export const Intro: React.FC<Props> = ({ onStart, onEnterDashboard }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
 
@@ -19,7 +21,18 @@ export const Intro: React.FC<Props> = ({ onStart }) => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+    <div className="flex flex-col items-center justify-center h-full p-4 text-center relative">
+      {onEnterDashboard && step >= 2 && (
+        <button 
+          onClick={onEnterDashboard}
+          title="教师学情看板"
+          className="absolute top-4 right-4 p-3 bg-white/5 hover:bg-brand-cyan/20 rounded-xl text-white/50 hover:text-brand-cyan transition z-50 flex items-center gap-2"
+        >
+          <BarChart3 size={20} />
+          <span className="text-sm font-bold hidden md:inline">数据大屏</span>
+        </button>
+      )}
+
       {step === 0 && (
         <motion.div
            initial={{ opacity: 0 }}

@@ -9,6 +9,7 @@ import { Stage4 } from './stages/Stage4';
 import { Stage5 } from './stages/Stage5';
 import { Stage6 } from './stages/Stage6';
 import { Outro } from './stages/Outro';
+import { Dashboard } from './components/Dashboard';
 import { AnimatePresence, motion } from 'motion/react';
 import { TestPanel } from './components/TestPanel';
 import { AITutorProvider } from './contexts/AIContext';
@@ -28,7 +29,20 @@ export default function App() {
   };
 
   const wrapComplete = (stageIdx: number) => {
-    return (score: number, extraData?: any) => {
+    return (score: number, extraData?: any, failCount: number = 0) => {
+      // Async POST without awaiting to avoid blocking UI
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerName: gameState.playerName,
+          stage: stageIdx,
+          score: score,
+          failCount: failCount,
+          details: extraData || {}
+        })
+      }).catch(err => console.log('Notice: Local DB saving skipped', err));
+
       setGameState(prev => {
         const next = { ...prev };
         next.totalXP += score;
@@ -64,7 +78,13 @@ export default function App() {
         <AnimatePresence mode="wait">
           {gameState.currentStage === 0 && (
             <motion.div key="intro" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
-              <Intro onStart={handleStart} />
+              <Intro onStart={handleStart} onEnterDashboard={() => handleJump(-1)} />
+            </motion.div>
+          )}
+
+          {gameState.currentStage === -1 && (
+            <motion.div key="dashboard" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -100, opacity: 0 }} className="h-full">
+              <Dashboard onBack={() => handleJump(0)} />
             </motion.div>
           )}
 
